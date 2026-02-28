@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         releaseDate: dbModel.releaseDate?.toISOString() ?? null,
         paramSize: dbModel.paramSize,
         openSource: dbModel.openSource,
+        accessUrl: dbModel.accessUrl ?? null,
         scores,
       };
     });

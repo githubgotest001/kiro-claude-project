@@ -103,7 +103,7 @@ export default function Home() {
             {lastUpdated && (
               <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                 数据更新于 {new Date(lastUpdated).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                {' · '}非实时数据，通过定期抓取公开评测平台获得
+                {' · '}每 3 天自动更新，来源于公开评测平台
               </p>
             )}
           </div>

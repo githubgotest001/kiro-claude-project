@@ -26,10 +26,14 @@ export interface ScoreHistory {
   scrapedAt: string;
 }
 
-/** 带排名的模型（用于排行榜展示） */
-export interface RankedModel extends Model {
+/** 带排名的模型（排名算法输出，不含额外展示字段） */
+export interface BaseRankedModel extends Model {
   rank: number;
   dimensionScore: number | null;
+}
+
+/** 带排名的模型（用于排行榜展示，含额外展示字段） */
+export interface RankedModel extends BaseRankedModel {
   description: string | null;
   dimensionCount: number;
 }
@@ -82,14 +86,6 @@ export interface ScrapeResult {
   status: 'success' | 'partial' | 'error';
   recordsProcessed: number;
   errors: string[];
-}
-
-/** 导出元信息 */
-export interface ExportMeta {
-  exportedAt: string;
-  source: string;
-  filters: FilterState;
-  dataLastUpdated: string;
 }
 
 /** 数据抓取器接口 */

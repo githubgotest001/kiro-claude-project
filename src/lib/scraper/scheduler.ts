@@ -35,9 +35,9 @@ export class ScraperScheduler {
   }
 
   /**
-   * 启动定时任务（默认每周日 00:00）
+   * 启动定时任务（默认每 3 天凌晨 2:00）
    */
-  start(cronExpression = '0 0 * * 0'): void {
+  start(cronExpression = '0 2 */3 * *'): void {
     this.stop();
     this.cronJob = cron.schedule(cronExpression, () => {
       this.runNow().catch((err) => {
@@ -159,7 +159,7 @@ export class ScraperScheduler {
     deduped: ValidatedData[],
     startedAt: Date,
   ): Promise<void> {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => {
       for (const record of deduped) {
         // 从原始数据中提取模型元信息
         const rawRecord = rawData.find((r) => r.modelName === record.modelName);

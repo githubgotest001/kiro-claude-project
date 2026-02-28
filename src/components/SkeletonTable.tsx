@@ -4,15 +4,15 @@ const SKELETON_ROWS = 6;
 
 const columns = [
   { width: 'w-8' },    // 排名
-  { width: 'w-28' },   // 模型名称
+  { width: 'w-28' },   // 模型
   { width: 'w-20' },   // 开发商
-  { width: 'w-20' },   // 发布日期
   { width: 'w-16' },   // 参数规模
   { width: 'w-12' },   // 开源
   { width: 'w-14' },   // 评分
+  { width: 'w-14' },   // 评测覆盖
 ];
 
-const headerLabels = ['排名', '模型名称', '开发商', '发布日期', '参数规模', '开源', '评分'];
+const headerLabels = ['排名', '模型', '开发商', '参数规模', '开源', '评分', '评测覆盖'];
 
 export default function SkeletonTable() {
   return (

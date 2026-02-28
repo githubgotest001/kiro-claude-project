@@ -2,14 +2,14 @@
 
 ## 概述
 
-本系统是一个全栈 Web 应用，用于展示和对比市面上主流 AI 大模型的评测数据。前端采用 Next.js（React）构建，提供响应式的交互界面；后端使用 Next.js API Routes 提供数据接口；数据抓取模块使用 Node.js 脚本定时从第三方评测平台获取数据；数据存储使用 SQLite（通过 Prisma ORM）以简化部署。
+本系统是一个全栈 Web 应用，用于展示和对比市面上主流 AI 大模型的评测数据。前端采用 Next.js（React）构建，提供响应式的交互界面；后端使用 Next.js API Routes 提供数据接口；数据抓取模块使用 node-cron 每 3 天自动从数据源获取数据；数据存储使用 SQLite（通过 Prisma ORM）以简化部署。
 
 技术选型理由：
 - Next.js：SSR/SSG 支持，利于 SEO 和首屏加载性能；API Routes 简化后端开发
 - SQLite + Prisma：轻量级数据库，无需额外数据库服务，适合中小规模数据
 - Tailwind CSS：快速构建响应式 UI，支持深色模式
 - Recharts：React 生态中成熟的图表库，支持雷达图、柱状图、折线图
-- node-cron：轻量级定时任务调度
+- node-cron：轻量级定时任务调度，通过 instrumentation.ts 在应用启动时自动开启
 
 ## 架构
 
@@ -25,7 +25,6 @@ graph TB
         E[/api/models]
         F[/api/rankings]
         G[/api/dimensions]
-        H[/api/export]
         I[/api/scraper/trigger]
     end
 
@@ -36,23 +35,22 @@ graph TB
 
     subgraph 抓取模块 ["数据抓取模块"]
         L[调度器 node-cron]
-        M[LMSYS 抓取器]
-        N[OpenLLM 抓取器]
-        O[官方数据抓取器]
+        M[内置数据源]
+        N[Artificial Analysis API]
         P[数据校验器]
     end
 
     前端 --> API
     API --> K --> J
-    L --> M & N & O
-    M & N & O --> P --> K
+    L --> M & N
+    M & N --> P --> K
 ```
 
 ### 数据流
 
 ```mermaid
 sequenceDiagram
-    participant Cron as 定时调度器
+    participant Cron as 定时调度器 (每3天)
     participant Scraper as 数据抓取器
     participant Validator as 数据校验器
     participant DB as 数据库
@@ -63,12 +61,12 @@ sequenceDiagram
     Scraper->>Scraper: 从各数据源抓取原始数据
     Scraper->>Validator: 提交原始数据
     Validator->>Validator: 格式校验 + 去重
-    Validator->>DB: 存储原始数据和处理后数据
+    Validator->>DB: 事务性写入（失败不重试）
     
     UI->>API: 请求排行数据
     API->>DB: 查询数据
     DB-->>API: 返回结果
-    API-->>UI: 返回 JSON 数据
+    API-->>UI: 返回 JSON 数据（含 lastUpdated）
     UI->>UI: 渲染图表和表格
 ```
 
@@ -79,9 +77,10 @@ sequenceDiagram
 #### 页面组件
 
 1. **LeaderboardPage** - 排行榜首页
-   - 展示模型数据表格
+   - 展示模型数据表格（含简介、评测覆盖维度数）
    - 集成筛选栏、搜索框、维度切换
-   - 支持排序和分页
+   - 底部悬浮数据来源栏（含权威性说明）
+   - 显示最后抓取时间
 
 2. **ModelDetailPage** - 模型详情页
    - 展示单个模型的完整评测数据
@@ -94,7 +93,8 @@ sequenceDiagram
 #### 功能组件
 
 1. **RankingTable** - 排行表格组件
-   - Props: `models: Model[]`, `dimension: string`, `sortOrder: 'asc' | 'desc'`
+   - Props: `models: RankedModel[]`
+   - 列：排名、模型（含简介）、开发商、参数规模、开源、评分、评测覆盖
    - 支持列排序、前三名高亮
 
 2. **FilterPanel** - 筛选面板组件
@@ -108,17 +108,14 @@ sequenceDiagram
 4. **DimensionSelector** - 维度选择器
    - Props: `dimensions: Dimension[]`, `selected: string`, `onChange: (dim: string) => void`
 
-5. **RadarChart** - 雷达图组件
+5. **CompareRadarChart** - 雷达图组件
    - Props: `models: Model[]`, `dimensions: Dimension[]`
 
-6. **BarChart** - 柱状图组件
-   - Props: `models: Model[]`, `dimension: string`
+6. **ScoreBarChart** - 柱状图组件
+   - Props: `models: RankedModel[]`, `dimension: string`
 
-7. **LineChart** - 折线图组件
+7. **ScoreLineChart** - 折线图组件
    - Props: `modelId: string`, `dimension: string`, `history: ScoreHistory[]`
-
-8. **ExportButton** - 数据导出组件
-   - Props: `data: Model[]`, `format: 'csv' | 'json'`
 
 ### API 接口
 
@@ -131,19 +128,18 @@ GET /api/models/:id
   响应: { model: ModelDetail }
 
 GET /api/rankings
-  查询参数: dimension, limit?
-  响应: { rankings: RankedModel[] }
+  查询参数: dimension (必填), limit? (默认 30)
+  响应: { rankings: RankedModel[], lastUpdated: string | null, dataSource: string | null }
 
 GET /api/dimensions
   响应: { dimensions: Dimension[] }
 
-GET /api/export
-  查询参数: format ('csv' | 'json'), 与 /api/models 相同的筛选参数
-  响应: 文件下载 (CSV 或 JSON)
+GET /api/scraper/trigger
+  响应: { schedule: string, history: ScrapeLog[] }
 
 POST /api/scraper/trigger
   请求体: { source?: string }
-  响应: { status: 'started' | 'error', message: string }
+  响应: { status: 'completed' | 'error', message: string, results: ScrapeResult[] }
 ```
 
 ### 数据抓取器接口
@@ -162,9 +158,9 @@ interface DataValidator {
 
 interface ScraperScheduler {
   register(scraper: Scraper): void;
-  start(cronExpression: string): void;
+  start(cronExpression: string): void;  // 默认 '0 2 */3 * *'
   stop(): void;
-  runNow(scraperName?: string): Promise<ScrapeResult>;
+  runNow(scraperName?: string): Promise<ScrapeResult[]>;
 }
 ```
 
@@ -181,6 +177,7 @@ model AIModel {
   paramSize   String?
   openSource  Boolean  @default(false)
   description String?
+  accessUrl   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -233,7 +230,8 @@ interface Model {
   releaseDate: string | null;
   paramSize: string | null;
   openSource: boolean;
-  scores: Record<string, number | null>; // dimensionName -> score
+  accessUrl: string | null;
+  scores: Record<string, number | null>;
 }
 
 interface ModelDetail extends Model {
@@ -251,6 +249,8 @@ interface ScoreHistory {
 interface RankedModel extends Model {
   rank: number;
   dimensionScore: number | null;
+  description: string | null;
+  dimensionCount: number;
 }
 
 interface Dimension {
@@ -275,6 +275,14 @@ interface RawScrapedData {
   score: number;
   scrapedAt: Date;
   rawPayload: string;
+  modelMeta?: {
+    vendor?: string;
+    releaseDate?: string;
+    paramSize?: string;
+    openSource?: boolean;
+    description?: string;
+    accessUrl?: string;
+  };
 }
 
 interface ValidatedData extends RawScrapedData {
@@ -287,13 +295,6 @@ interface ScrapeResult {
   status: 'success' | 'partial' | 'error';
   recordsProcessed: number;
   errors: string[];
-}
-
-interface ExportMeta {
-  exportedAt: string;
-  source: string;
-  filters: FilterState;
-  dataLastUpdated: string;
 }
 ```
 
@@ -312,11 +313,11 @@ interface ScoreNormalizer {
 
 ## 正确性属性
 
-*正确性属性是指在系统所有有效执行中都应成立的特征或行为——本质上是关于系统应该做什么的形式化陈述。属性是连接人类可读规范和机器可验证正确性保证之间的桥梁。*
+*正确性属性是指在系统所有有效执行中都应成立的特征或行为——本质上是关于系统应该做什么的形式化陈述。*
 
 ### Property 1: 模型展示完整性
 
-*For any* 模型数据，排行表格中该模型的渲染输出应包含所有必需字段：模型名称、开发商、发布日期、参数规模、是否开源，以及该模型所有已有评测维度的评分数据。
+*For any* 模型数据，排行表格中该模型的渲染输出应包含所有必需字段：模型名称、开发商、参数规模、是否开源、评分、评测覆盖维度数，以及该模型的简介描述。
 
 **Validates: Requirements 1.2, 1.3**
 
@@ -328,7 +329,7 @@ interface ScoreNormalizer {
 
 ### Property 3: 加权平均排行正确性
 
-*For any* 模型列表和维度权重配置，综合排行的排序结果应满足：每个模型的综合分等于其各维度评分的加权平均值，且列表按综合分降序排列。
+*For any* 模型列表和维度权重配置，综合排行的排序结果应满足：每个模型的综合分等于其各维度评分的加权平均值，且列表按综合分降序排列。模型至少需覆盖一半以上维度才参与排名。
 
 **Validates: Requirements 2.3**
 
@@ -352,7 +353,7 @@ interface ScoreNormalizer {
 
 ### Property 7: 错误恢复数据不变性
 
-*For any* 数据库状态，当数据抓取过程发生错误时，数据库中的模型数据和评分数据应与抓取前完全一致。
+*For any* 数据库状态，当数据抓取过程发生错误时，数据库中的模型数据和评分数据应与抓取前完全一致（失败不重试）。
 
 **Validates: Requirements 4.5**
 
@@ -368,28 +369,16 @@ interface ScoreNormalizer {
 
 **Validates: Requirements 5.1**
 
-### Property 10: 数据导出往返一致性
-
-*For any* 模型数据集和导出格式（CSV 或 JSON），将数据导出后再解析回来应产生与原始数据等价的结果。
-
-**Validates: Requirements 8.1, 8.2**
-
-### Property 11: 导出数据与筛选结果一致性
-
-*For any* 筛选条件和模型数据集，导出的数据应与当前筛选条件下页面展示的数据一致，且导出文件应包含数据来源和抓取时间元信息。
-
-**Validates: Requirements 8.3, 8.4**
-
 ## 错误处理
 
 ### 数据抓取错误
 
 | 错误场景 | 处理策略 |
 |---------|---------|
-| 数据源网站不可达 | 记录错误日志，跳过该数据源，继续抓取其他数据源 |
+| 数据源网站不可达 | 记录错误日志，跳过该数据源，不重试 |
 | 数据格式变更 | 记录格式不匹配错误，保留原始响应数据用于调试 |
 | 数据校验失败 | 丢弃不合格数据，记录详细校验错误信息 |
-| 抓取超时 | 设置 30 秒超时，超时后记录日志并重试一次 |
+| 抓取超时 | 设置 30 秒超时，超时后记录日志，不重试 |
 | 数据库写入失败 | 事务回滚，保留上次成功数据，记录错误日志 |
 
 ### API 错误
@@ -398,7 +387,6 @@ interface ScoreNormalizer {
 |---------|-----------|---------|
 | 模型不存在 | 404 | `{ error: "模型未找到" }` |
 | 无效的筛选参数 | 400 | `{ error: "参数错误", details: [...] }` |
-| 无效的导出格式 | 400 | `{ error: "不支持的导出格式" }` |
 | 服务器内部错误 | 500 | `{ error: "服务器错误" }` |
 | 数据库连接失败 | 503 | `{ error: "服务暂时不可用" }` |
 
@@ -414,7 +402,6 @@ interface ScoreNormalizer {
 
 - **单元测试**: Jest + React Testing Library
 - **属性测试**: fast-check（JavaScript/TypeScript 生态中成熟的属性测试库）
-- **端到端测试**: Playwright（可选，用于关键用户流程）
 
 ### 属性测试配置
 
@@ -438,8 +425,6 @@ interface ScoreNormalizer {
 - 筛选逻辑正确性（Property 4, 5）
 - 数据校验与去重（Property 6）
 - 错误恢复不变性（Property 7）
-- 数据导出往返一致性（Property 10）
-- 导出与筛选一致性（Property 11）
 
 ### 测试与实现的关系
 

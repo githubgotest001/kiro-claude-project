@@ -25,6 +25,7 @@ const makeModel = (id: string, name: string, scores: Record<string, number | nul
   releaseDate: null,
   paramSize: null,
   openSource: false,
+  accessUrl: null,
   scores,
 });
 

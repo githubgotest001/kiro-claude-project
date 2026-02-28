@@ -11,6 +11,7 @@ const sampleModels: Model[] = [
     releaseDate: "2023-03-14",
     paramSize: "1.5T",
     openSource: false,
+    accessUrl: null,
     scores: { coding: 90, reasoning: 95, math: 88 },
   },
   {
@@ -20,6 +21,7 @@ const sampleModels: Model[] = [
     releaseDate: "2024-04-18",
     paramSize: "70B",
     openSource: true,
+    accessUrl: null,
     scores: { coding: 80, reasoning: 82, math: 75 },
   },
   {
@@ -29,6 +31,7 @@ const sampleModels: Model[] = [
     releaseDate: "2024-03-04",
     paramSize: null,
     openSource: false,
+    accessUrl: null,
     scores: { coding: 88, reasoning: 92, math: null },
   },
   {
@@ -38,6 +41,7 @@ const sampleModels: Model[] = [
     releaseDate: "2023-12-06",
     paramSize: "175B",
     openSource: false,
+    accessUrl: null,
     scores: { coding: 85, reasoning: 88, math: 90 },
   },
   {
@@ -47,6 +51,7 @@ const sampleModels: Model[] = [
     releaseDate: "2023-09-27",
     paramSize: "7B",
     openSource: true,
+    accessUrl: null,
     scores: { coding: null, reasoning: null, math: null },
   },
 ];
@@ -98,6 +103,7 @@ describe("rankByDimension", () => {
         releaseDate: null,
         paramSize: null,
         openSource: false,
+        accessUrl: null,
         scores: { coding: 90 },
       },
       {
@@ -107,6 +113,7 @@ describe("rankByDimension", () => {
         releaseDate: null,
         paramSize: null,
         openSource: false,
+        accessUrl: null,
         scores: { coding: 80 },
       },
     ];
@@ -197,6 +204,7 @@ describe("rankByComposite", () => {
         releaseDate: null,
         paramSize: null,
         openSource: false,
+        accessUrl: null,
         scores: { dim1: 100, dim2: 50 },
       },
       {
@@ -206,6 +214,7 @@ describe("rankByComposite", () => {
         releaseDate: null,
         paramSize: null,
         openSource: false,
+        accessUrl: null,
         scores: { dim1: 50, dim2: 100 },
       },
     ];

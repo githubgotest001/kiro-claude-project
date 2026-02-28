@@ -50,6 +50,7 @@ export async function GET(
       releaseDate: dbModel.releaseDate?.toISOString() ?? null,
       paramSize: dbModel.paramSize,
       openSource: dbModel.openSource,
+      accessUrl: dbModel.accessUrl ?? null,
       description: dbModel.description,
       scores,
       scoreHistory,

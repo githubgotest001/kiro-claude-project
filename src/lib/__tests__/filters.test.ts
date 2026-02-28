@@ -11,6 +11,7 @@ const sampleModels: Model[] = [
     releaseDate: "2023-03-14",
     paramSize: "1.5T",
     openSource: false,
+    accessUrl: null,
     scores: { coding: 90, reasoning: 95 },
   },
   {
@@ -20,6 +21,7 @@ const sampleModels: Model[] = [
     releaseDate: "2024-04-18",
     paramSize: "70B",
     openSource: true,
+    accessUrl: null,
     scores: { coding: 80, reasoning: 82 },
   },
   {
@@ -29,6 +31,7 @@ const sampleModels: Model[] = [
     releaseDate: "2024-03-04",
     paramSize: null,
     openSource: false,
+    accessUrl: null,
     scores: { coding: 88, reasoning: 92 },
   },
   {
@@ -38,6 +41,7 @@ const sampleModels: Model[] = [
     releaseDate: "2023-12-06",
     paramSize: "175B",
     openSource: false,
+    accessUrl: null,
     scores: { coding: 85, reasoning: 88 },
   },
   {
@@ -47,6 +51,7 @@ const sampleModels: Model[] = [
     releaseDate: "2023-09-27",
     paramSize: "7B",
     openSource: true,
+    accessUrl: null,
     scores: { coding: 65, reasoning: 70 },
   },
 ];

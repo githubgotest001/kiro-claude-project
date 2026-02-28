@@ -1,4 +1,4 @@
-import type { Model, RankedModel, Dimension } from "@/types";
+import type { Model, BaseRankedModel, Dimension } from "@/types";
 
 /**
  * 按指定维度对模型进行排行
@@ -9,7 +9,7 @@ import type { Model, RankedModel, Dimension } from "@/types";
 export function rankByDimension(
   models: Model[],
   dimension: string
-): RankedModel[] {
+): BaseRankedModel[] {
   const withScores = models.map((model) => ({
     ...model,
     dimensionScore: model.scores[dimension] ?? null,
@@ -38,7 +38,7 @@ export function rankByDimension(
 export function rankByComposite(
   models: Model[],
   dimensions: Dimension[]
-): RankedModel[] {
+): BaseRankedModel[] {
   const minDimensions = Math.ceil(dimensions.length / 2);
 
   const withScores = models.map((model) => {
