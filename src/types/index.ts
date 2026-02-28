@@ -8,6 +8,7 @@ export interface Model {
   releaseDate: string | null;
   paramSize: string | null;
   openSource: boolean;
+  accessUrl: string | null;
   scores: Record<string, number | null>; // dimensionName -> score
 }
 
@@ -29,6 +30,8 @@ export interface ScoreHistory {
 export interface RankedModel extends Model {
   rank: number;
   dimensionScore: number | null;
+  description: string | null;
+  dimensionCount: number;
 }
 
 /** 评测维度 */
@@ -63,6 +66,7 @@ export interface RawScrapedData {
     paramSize?: string;   // 如 "175B", "70B"
     openSource?: boolean;
     description?: string;
+    accessUrl?: string;   // 模型使用/访问链接
   };
 }
 

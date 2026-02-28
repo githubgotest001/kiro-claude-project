@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate limit if provided
-    const limit = limitParam ? parseInt(limitParam, 10) : null;
+    // Validate limit if provided (default to 30)
+    const limit = limitParam ? parseInt(limitParam, 10) : 30;
     if (limitParam && (isNaN(limit!) || limit! < 1)) {
       return NextResponse.json(
         { error: "参数错误", details: ["limit 必须为正整数"] },
@@ -56,9 +56,18 @@ export async function GET(request: NextRequest) {
         releaseDate: dbModel.releaseDate?.toISOString() ?? null,
         paramSize: dbModel.paramSize,
         openSource: dbModel.openSource,
+        accessUrl: dbModel.accessUrl ?? null,
         scores,
       };
     });
+
+    // 构建模型额外信息映射（description）
+    const modelExtras = new Map<string, { description: string | null }>();
+    for (const dbModel of dbModels) {
+      modelExtras.set(dbModel.id, {
+        description: dbModel.description ?? null,
+      });
+    }
 
     // Fetch all dimensions from DB
     const dbDimensions = await prisma.dimension.findMany();
@@ -77,10 +86,21 @@ export async function GET(request: NextRequest) {
       rankings = rankByDimension(models, dimension);
     }
 
-    // Apply limit if provided
+    // Apply limit
     if (limit) {
       rankings = rankings.slice(0, limit);
     }
+
+    // 附加额外字段：description 和 dimensionCount
+    const enrichedRankings = rankings.map((r) => {
+      const extra = modelExtras.get(r.id);
+      const dimCount = Object.values(r.scores).filter((v) => v != null).length;
+      return {
+        ...r,
+        description: extra?.description ?? null,
+        dimensionCount: dimCount,
+      };
+    });
 
     // 查询最后一次成功抓取的时间
     const lastScrape = await prisma.scrapeLog.findFirst({
@@ -90,7 +110,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      rankings,
+      rankings: enrichedRankings,
       lastUpdated: lastScrape?.endedAt?.toISOString() ?? null,
       dataSource: lastScrape?.source ?? null,
     });

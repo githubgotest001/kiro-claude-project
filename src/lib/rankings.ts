@@ -31,6 +31,7 @@ export function rankByDimension(
 /**
  * 按加权平均综合分对模型进行排行
  * - 综合分 = sum(score_i * weight_i) / sum(weight_i)，仅计算非 null 评分的维度
+ * - 模型至少需要覆盖一半以上的维度才参与排名，否则排在末尾
  * - 所有维度评分均为 null 的模型排在末尾，dimensionScore 为 null
  * - 按综合分降序排列，从 1 开始分配排名
  */
@@ -38,20 +39,27 @@ export function rankByComposite(
   models: Model[],
   dimensions: Dimension[]
 ): RankedModel[] {
+  const minDimensions = Math.ceil(dimensions.length / 2);
+
   const withScores = models.map((model) => {
     let weightedSum = 0;
     let totalWeight = 0;
+    let coveredCount = 0;
 
     for (const dim of dimensions) {
       const score = model.scores[dim.name];
       if (score != null) {
         weightedSum += score * dim.weight;
         totalWeight += dim.weight;
+        coveredCount++;
       }
     }
 
+    // 维度覆盖不足的模型不参与综合排名
     const compositeScore =
-      totalWeight > 0 ? weightedSum / totalWeight : null;
+      totalWeight > 0 && coveredCount >= minDimensions
+        ? weightedSum / totalWeight
+        : null;
 
     return {
       ...model,

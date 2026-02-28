@@ -8,7 +8,7 @@ interface RankingTableProps {
   models: RankedModel[];
 }
 
-type SortKey = 'rank' | 'name' | 'vendor' | 'releaseDate' | 'paramSize' | 'openSource' | 'dimensionScore';
+type SortKey = 'rank' | 'name' | 'vendor' | 'releaseDate' | 'paramSize' | 'openSource' | 'dimensionScore' | 'dimensionCount';
 type SortDir = 'asc' | 'desc';
 
 const medalIcons: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -52,6 +52,9 @@ export default function RankingTable({ models }: RankingTableProps) {
         case 'dimensionScore':
           cmp = (a.dimensionScore ?? -1) - (b.dimensionScore ?? -1);
           break;
+        case 'dimensionCount':
+          cmp = (a.dimensionCount ?? 0) - (b.dimensionCount ?? 0);
+          break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -65,12 +68,12 @@ export default function RankingTable({ models }: RankingTableProps) {
 
   const columns: { key: SortKey; label: string }[] = [
     { key: 'rank', label: '排名' },
-    { key: 'name', label: '模型名称' },
+    { key: 'name', label: '模型' },
     { key: 'vendor', label: '开发商' },
-    { key: 'releaseDate', label: '发布日期' },
     { key: 'paramSize', label: '参数规模' },
     { key: 'openSource', label: '开源' },
     { key: 'dimensionScore', label: '评分' },
+    { key: 'dimensionCount', label: '评测覆盖' },
   ];
 
   return (
@@ -109,21 +112,25 @@ export default function RankingTable({ models }: RankingTableProps) {
                 {model.rank}
               </td>
               <td className="px-4 py-3">
-                <Link
-                  href={`/models/${model.id}`}
-                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                >
-                  {model.name}
-                </Link>
+                <div>
+                  <Link
+                    href={`/models/${model.id}`}
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  >
+                    {model.name}
+                  </Link>
+                  {model.description && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-1" title={model.description}>
+                      {model.description}
+                    </p>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3">{model.vendor}</td>
               <td className="px-4 py-3 whitespace-nowrap">
-                {model.releaseDate
-                  ? new Date(model.releaseDate).toLocaleDateString('zh-CN')
-                  : <span className="text-gray-400">暂无数据</span>}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
-                {model.paramSize ?? <span className="text-gray-400">暂无数据</span>}
+                {model.paramSize && model.paramSize !== '-'
+                  ? model.paramSize
+                  : <span className="text-gray-400">未公开</span>}
               </td>
               <td className="px-4 py-3">
                 {model.openSource ? (
@@ -140,8 +147,19 @@ export default function RankingTable({ models }: RankingTableProps) {
                 {model.dimensionScore != null ? (
                   <span className="font-semibold">{model.dimensionScore.toFixed(1)}</span>
                 ) : (
-                  <span className="text-gray-400">暂无数据</span>
+                  <span className="text-gray-400">-</span>
                 )}
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  model.dimensionCount >= 6
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : model.dimensionCount >= 3
+                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                }`}>
+                  {model.dimensionCount}/6
+                </span>
               </td>
             </tr>
           ))}

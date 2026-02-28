@@ -175,6 +175,7 @@ export class ScraperScheduler {
             ...(meta?.paramSize && { paramSize: meta.paramSize }),
             ...(meta?.openSource !== undefined && { openSource: meta.openSource }),
             ...(meta?.description && { description: meta.description }),
+            ...(meta?.accessUrl && { accessUrl: meta.accessUrl }),
           },
           create: {
             name: record.modelName,
@@ -183,6 +184,7 @@ export class ScraperScheduler {
             paramSize: meta?.paramSize ?? null,
             openSource: meta?.openSource ?? false,
             description: meta?.description ?? null,
+            accessUrl: meta?.accessUrl ?? null,
           },
         });
 

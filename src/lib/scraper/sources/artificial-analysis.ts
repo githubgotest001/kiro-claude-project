@@ -87,9 +87,13 @@ export class ArtificialAnalysisScraper implements Scraper {
         if (rawScore == null) continue;
 
         // 归一化分数到 0-100 范围
-        // intelligence_index 和 coding_index 已经是百分制
-        // mmlu_pro 等是 0-1 的比例，需要 * 100
-        const score = rawScore <= 1 ? rawScore * 100 : rawScore;
+        // intelligence_index / coding_index / math_index 已经是百分制（0-100）
+        // mmlu_pro / gpqa 等是 0-1 的比例，需要 * 100
+        const isPercentage = metricKey.startsWith('artificial_analysis_');
+        const score = isPercentage ? rawScore : rawScore * 100;
+
+        // 过滤掉异常分数（超出合理范围）
+        if (score < 0 || score > 100) continue;
 
         results.push({
           source: this.source,
