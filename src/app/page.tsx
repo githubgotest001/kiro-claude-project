@@ -39,7 +39,7 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setRankings(data.rankings ?? []);
-        if (data.lastUpdated) setLastUpdated(data.lastUpdated);
+        setLastUpdated(data.lastUpdated ?? null);
       })
       .catch(() => setRankings([]))
       .finally(() => setLoading(false));

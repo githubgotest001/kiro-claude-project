@@ -46,12 +46,20 @@ export async function POST(request: NextRequest) {
 
     const results = await scraperScheduler.runNow(source);
 
+    // 查询最新的成功抓取时间
+    const lastScrape = await prisma.scrapeLog.findFirst({
+      where: { status: 'success' },
+      orderBy: { endedAt: 'desc' },
+      select: { endedAt: true },
+    });
+
     return NextResponse.json({
       status: "completed",
       message: source
         ? `抓取完成，数据源: ${source}`
         : "抓取完成，已运行所有数据源",
       results,
+      lastUpdated: lastScrape?.endedAt?.toISOString() ?? null,
     });
   } catch (error) {
     console.error("POST /api/scraper/trigger error:", error);
