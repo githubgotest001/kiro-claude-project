@@ -55,3 +55,17 @@ model ScrapeLog {
   startedAt DateTime  @default(now())
   endedAt   DateTime?
 }
+
+// AI 新闻条目模型
+model NewsItem {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String
+  content     String   @default("") // 完整新闻正文
+  sourceName  String
+  sourceUrl   String   @unique
+  publishedAt DateTime
+  tags        String   // JSON 数组字符串，如 '["GPT-4o","OpenAI"]'
+  scrapedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+}

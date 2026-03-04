@@ -105,3 +105,50 @@ export interface DataValidator {
 export interface ScoreNormalizer {
   normalize(rawScore: number, source: string, dimension: string): number;
 }
+
+
+// ==================== 新闻相关类型 ====================
+
+/** 新闻条目（前端展示用） */
+export interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  sourceName: string;
+  sourceUrl: string;
+  publishedAt: string; // ISO 日期字符串
+  tags: string[];
+}
+
+/** 新闻列表分页响应 */
+export interface NewsListResponse {
+  news: NewsItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** 原始新闻数据 */
+export interface RawNewsItem {
+  title: string;
+  summary: string;
+  content: string;
+  sourceName: string;
+  sourceUrl: string;
+  publishedAt: Date;
+  tags: string[];
+  rawPayload: string; // 原始数据 JSON
+}
+
+/** 校验后的新闻数据 */
+export interface ValidatedNewsItem extends RawNewsItem {
+  normalizedTitle: string; // 归一化标题（用于去重）
+}
+
+/** 新闻抓取器接口 */
+export interface NewsScraperInterface {
+  name: string;
+  source: string;
+  scrapeNews(): Promise<RawNewsItem[]>;
+}

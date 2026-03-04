@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import NavLinks from "@/components/NavLinks";
 import ThemeToggle from "@/components/ThemeToggle";
 import "./globals.css";
 
@@ -31,17 +31,7 @@ export default function RootLayout({
         </a>
         <nav className="sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm" aria-label="主导航">
           <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link href="/" className="text-lg font-bold whitespace-nowrap">
-                AI 排行榜
-              </Link>
-              <Link
-                href="/compare"
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-              >
-                模型对比
-              </Link>
-            </div>
+            <NavLinks />
             <ThemeToggle />
           </div>
         </nav>
